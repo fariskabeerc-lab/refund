@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import plotly.express as px
 
 # ---- FILES ----
 OUTLET_FILES = {
@@ -52,12 +53,14 @@ else:
 # ---- CLEAN & PREP DATA ----
 for col in ["Total Before Tax", "Total After Tax"]:
     df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-    df[col] = df[col].abs()  # Convert negative to positive (returns)
+    df[col] = df[col].abs()  # convert negatives to positive (return value)
 
 # ---- KEY METRICS ----
 total_returns_after = df["Total After Tax"].sum()
 total_returns_before = df["Total Before Tax"].sum()
-top_returned_items = df.groupby("Description")["Total After Tax"].sum().nlargest(10)
+top_returned_items = (
+    df.groupby("Description")["Total After Tax"].sum().nlargest(10).reset_index()
+)
 
 col1, col2 = st.columns(2)
 col1.metric("📦 Total Return Value (After Tax)", f"{total_returns_after:,.2f}")
@@ -65,7 +68,18 @@ col2.metric("🏷️ Total Return Value (Before Tax)", f"{total_returns_before:,
 
 # ---- TOP RETURNED ITEMS ----
 st.subheader("🏆 Top 10 Returned Items by Value")
-st.bar_chart(top_returned_items)
+fig_items = px.bar(
+    top_returned_items,
+    x="Description",
+    y="Total After Tax",
+    hover_data={"Description": True, "Total After Tax": ":,.2f"},
+    text_auto=".2s",
+    color="Total After Tax",
+    color_continuous_scale="Blues",
+    title="Top Returned Items",
+)
+fig_items.update_layout(xaxis_title="", yaxis_title="Return Value (After Tax)")
+st.plotly_chart(fig_items, use_container_width=True)
 
 # ---- OUTLET SUMMARY ----
 if outlet_selected == "All":
@@ -76,12 +90,28 @@ if outlet_selected == "All":
         .sum()
         .abs()
         .sort_values("Total After Tax", ascending=False)
+        .reset_index()
     )
 
-    # Bar chart: outlet-wise total after tax
-    st.write("### 💹 Outlet-wise Total Return Value (After Tax)")
-    st.bar_chart(outlet_summary["Total After Tax"])
+    # ---- INTERACTIVE BAR CHART ----
+    fig_outlets = px.bar(
+        outlet_summary,
+        x="Outlet",
+        y="Total After Tax",
+        hover_data={"Outlet": True, "Total After Tax": ":,.2f"},
+        text_auto=".2s",
+        color="Total After Tax",
+        color_continuous_scale="Tealgrn",
+        title="💹 Outlet-wise Total Return Value (After Tax)",
+    )
+    fig_outlets.update_layout(
+        xaxis_title="Outlet",
+        yaxis_title="Return Value (After Tax)",
+        hoverlabel=dict(bgcolor="white", font_size=13, font_family="Arial"),
+    )
+    st.plotly_chart(fig_outlets, use_container_width=True)
 
+    # Table
     st.dataframe(outlet_summary)
 
 # ---- DETAILED VIEW ----
