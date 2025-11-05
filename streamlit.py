@@ -4,27 +4,27 @@ import os
 
 # ---- FILES ----
 OUTLET_FILES = {
-    "Hilal": "Hilal oct.Xlsx",
-    "Safa Super": "Safa super oct.Xlsx",
-    "Azhar HP": "azhar HP oct.Xlsx",
-    "Azhar": "azhar Oct.Xlsx",
-    "Blue Pearl": "blue pearl oct.Xlsx",
-    "Fida": "fida oct.Xlsx",
-    "Hadeqat": "hadeqat oct.Xlsx",
-    "Jais": "jais oct.Xlsx",
-    "Sabah": "sabah oct.Xlsx",
-    "Sahat": "sahat oct.Xlsx",
-    "Shams salem": "shams salem oct.Xlsx",
-    "Shams Liwan": "liwan oct.Xlsx",
-    "Superstore": "superstore oct.Xlsx",
-    "Tay Tay": "tay tay oct.Xlsx",
-    "Safa oudmehta": "oudmehta oct.Xlsx",
-    "Port saeed": "Port saeed oct.Xlsx"
+    "Hilal": "hilal.Xlsx",
+    #"Safa Super": "Safa super oct.Xlsx",
+    "Azhar HP": "azhar hp.Xlsx",
+    "Azhar": "Azhar GT.Xlsx",
+    "Blue Pearl": "blue pearl.Xlsx",
+    "Fida": "fida al madina.Xlsx",
+    "Hadeqat": "hadeqat.Xlsx",
+    "Jais": "jais.Xlsx",
+    "Sabah": "sabah.Xlsx",
+    "Sahat": "sahat.Xlsx",
+    "Shams salem": "shams.Xlsx",
+    "Shams Liwan": "liwan.Xlsx",
+    "Superstore": "superstore.Xlsx",
+    "Tay Tay": "taytay.Xlsx",
+    "Safa oudmehta": "safa oud metha.Xlsx",
+    "Port saeed": "port saeed.Xlsx"
 }
 
 # ---- APP ----
 st.set_page_config("Outlet Sales Dashboard", layout="wide")
-st.title("📊 Outlet Sales Performance Dashboard (October)")
+st.title("📊 Outlet Refund")
 
 # ---- READ ALL DATA ----
 @st.cache_data
