@@ -5,7 +5,7 @@ import os
 # ---- FILES ----
 OUTLET_FILES = {
     "Hilal": "hilal.Xlsx",
-    #"Safa Super": "Safa super oct.Xlsx",
+    "Safa Super": "safa super market.Xlsx",
     "Azhar HP": "azhar hp.Xlsx",
     "Azhar": "Azhar GT.Xlsx",
     "Blue Pearl": "blue pearl.Xlsx",
@@ -22,11 +22,11 @@ OUTLET_FILES = {
     "Port saeed": "port saeed.Xlsx"
 }
 
-# ---- APP ----
-st.set_page_config("Outlet Sales Dashboard", layout="wide")
-st.title("📊 Outlet Refund")
+# ---- APP SETTINGS ----
+st.set_page_config("Outlet Return Dashboard", layout="wide")
+st.title("📦 Outlet Return Analysis Dashboard (October)")
 
-# ---- READ ALL DATA ----
+# ---- LOAD DATA ----
 @st.cache_data
 def load_all_data():
     all_data = []
@@ -35,6 +35,8 @@ def load_all_data():
             df = pd.read_excel(file)
             df["Outlet"] = outlet
             all_data.append(df)
+        else:
+            st.warning(f"⚠️ File not found: {file}")
     return pd.concat(all_data, ignore_index=True)
 
 df_all = load_all_data()
@@ -47,42 +49,41 @@ if outlet_selected != "All":
 else:
     df = df_all
 
-# ---- CLEAN DATA ----
-for col in ["Total Before Tax", "Tax", "Total After Tax"]:
+# ---- CLEAN & PREP DATA ----
+for col in ["Total Before Tax", "Total After Tax"]:
     df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    df[col] = df[col].abs()  # Convert negative to positive (returns)
 
-# ---- KEY INSIGHTS ----
-total_sales = df["Total After Tax"].sum()
-total_tax = df["Tax"].sum()
-total_before_tax = df["Total Before Tax"].sum()
-top_items = df.groupby("Description")["Total After Tax"].sum().nlargest(10)
+# ---- KEY METRICS ----
+total_returns_after = df["Total After Tax"].sum()
+total_returns_before = df["Total Before Tax"].sum()
+top_returned_items = df.groupby("Description")["Total After Tax"].sum().nlargest(10)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("💰 Total Sales (After Tax)", f"{total_sales:,.2f}")
-col2.metric("🏷️ Total Before Tax", f"{total_before_tax:,.2f}")
-col3.metric("📈 Total Tax Collected", f"{total_tax:,.2f}")
+col1, col2 = st.columns(2)
+col1.metric("📦 Total Return Value (After Tax)", f"{total_returns_after:,.2f}")
+col2.metric("🏷️ Total Return Value (Before Tax)", f"{total_returns_before:,.2f}")
 
-# ---- TOP ITEMS ----
-st.subheader("🏆 Top 10 Items by Total Sales")
-st.bar_chart(top_items)
+# ---- TOP RETURNED ITEMS ----
+st.subheader("🏆 Top 10 Returned Items by Value")
+st.bar_chart(top_returned_items)
 
-# ---- OUTLET SUMMARY & CHART ----
+# ---- OUTLET SUMMARY ----
 if outlet_selected == "All":
-    st.subheader("🏬 Outlet-wise Summary")
+    st.subheader("🏬 Outlet-wise Return Summary")
 
     outlet_summary = (
-        df_all.groupby("Outlet")[["Total Before Tax", "Tax", "Total After Tax"]]
+        df_all.groupby("Outlet")[["Total Before Tax", "Total After Tax"]]
         .sum()
+        .abs()
         .sort_values("Total After Tax", ascending=False)
     )
 
-    # Bar chart for outlet-wise total after tax
-    st.write("### 💹 Outlet-wise Total Sales (After Tax)")
+    # Bar chart: outlet-wise total after tax
+    st.write("### 💹 Outlet-wise Total Return Value (After Tax)")
     st.bar_chart(outlet_summary["Total After Tax"])
 
-    # Detailed summary table
     st.dataframe(outlet_summary)
 
 # ---- DETAILED VIEW ----
-with st.expander("📋 View Detailed Data"):
+with st.expander("📋 View Detailed Return Data"):
     st.dataframe(df)
