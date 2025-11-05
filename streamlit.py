@@ -8,7 +8,7 @@ OUTLET_FILES = {
     "Hilal": "hilal.Xlsx",
     "Safa Super": "safa super market.Xlsx",
     "Azhar HP": "azhar hp.Xlsx",
-    "Azhar": "Azhar GT.Xlsx",
+    "Azhar GT": "Azhar GT.Xlsx",
     "Blue Pearl": "blue pearl.Xlsx",
     "Fida": "fida al madina.Xlsx",
     "Hadeqat": "hadeqat.Xlsx",
