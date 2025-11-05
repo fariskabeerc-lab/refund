@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import plotly.express as px
 
-# ---- FILES ----
 OUTLET_FILES = {
     "Hilal": "hilal.Xlsx",
     "Safa Super": "safa super market.Xlsx",
@@ -33,12 +32,13 @@ def load_all_data():
     for outlet, file in OUTLET_FILES.items():
         if os.path.exists(file):
             df = pd.read_excel(file)
+            df.columns = df.columns.str.strip()  # Clean column names
             df["Outlet"] = outlet
             frames.append(df)
         else:
             st.warning(f"⚠️ File not found: {file}")
     if not frames:
-        return pd.DataFrame()  # empty
+        return pd.DataFrame()
     return pd.concat(frames, ignore_index=True)
 
 df_all = load_all_data()
@@ -52,20 +52,10 @@ if outlet_selected != "All":
 else:
     df = df_all.copy()
 
-# ---- CLEAN & PREP: ignore Tax, convert columns, use absolute (returns) ----
+# ---- CLEAN & PREP ----
 for col in ["Total Before Tax", "Total After Tax"]:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).abs()
-    else:
-        df[col] = 0.0
-
-# Make sure df_all has numeric/abs too (used for outlet summary)
-df_all_prep = df_all.copy()
-for col in ["Total Before Tax", "Total After Tax"]:
-    if col in df_all_prep.columns:
-        df_all_prep[col] = pd.to_numeric(df_all_prep[col], errors="coerce").fillna(0).abs()
-    else:
-        df_all_prep[col] = 0.0
+    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).abs()
+    df_all[col] = pd.to_numeric(df_all[col], errors="coerce").fillna(0).abs()
 
 # ---- METRICS ----
 total_returns_after = df["Total After Tax"].sum()
@@ -74,7 +64,7 @@ col1, col2 = st.columns(2)
 col1.metric("📦 Total Return Value (After Tax)", f"{total_returns_after:,.2f}")
 col2.metric("🏷️ Total Return Value (Before Tax)", f"{total_returns_before:,.2f}")
 
-# ---- TOP 30 RETURNED ITEMS (vertical) ----
+# ---- TOP 30 RETURNED ITEMS ----
 st.subheader("🏆 Top 30 Returned Items by Value (After Tax)")
 
 top_n = 30
@@ -86,67 +76,64 @@ top_items = (
     .reset_index()
 )
 
-# If Description is numeric or has NaNs, coerce to string for plotting
 top_items["Description"] = top_items["Description"].astype(str)
 
 fig_items = px.bar(
     top_items,
-    x="Description",
-    y="Total After Tax",
+    y="Description",
+    x="Total After Tax",
+    orientation="h",  # Horizontal bar chart
     title=f"Top {top_n} Returned Items (by Return Value)",
     labels={"Total After Tax": "Return Value (After Tax)", "Description": "Item Description"},
     hover_data={"Description": True, "Total After Tax": ":,.2f"},
 )
-# Force vertical bars, rotate x ticks for readability and set height
+
 fig_items.update_traces(
-    hovertemplate="<b>%{x}</b><br>Return: %{y:,.2f}<extra></extra>",
+    hovertemplate="<b>%{y}</b><br>Return: %{x:,.2f}<extra></extra>",
     marker_line_width=0
 )
 fig_items.update_layout(
-    xaxis_tickangle=-45,
-    xaxis_tickfont=dict(size=9),
-    height=700,
-    margin=dict(l=40, r=20, t=60, b=200),
+    height=900,
+    margin=dict(l=200, r=50, t=60, b=40),
+    yaxis=dict(categoryorder="total ascending"),
 )
 st.plotly_chart(fig_items, use_container_width=True)
 
-# ---- OUTLET-WISE BAR (vertical) ----
+# ---- OUTLET-WISE RETURNS ----
 if outlet_selected == "All":
     st.subheader("🏬 Outlet-wise Total Return Value (After Tax)")
 
     outlet_summary = (
-        df_all_prep.groupby("Outlet", dropna=False)[["Total After Tax", "Total Before Tax"]]
+        df_all.groupby("Outlet")[["Total After Tax", "Total Before Tax"]]
         .sum()
         .reset_index()
         .sort_values("Total After Tax", ascending=False)
     )
 
-    # Ensure Outlet is string
-    outlet_summary["Outlet"] = outlet_summary["Outlet"].astype(str)
-
     fig_outlets = px.bar(
         outlet_summary,
-        x="Outlet",
-        y="Total After Tax",
+        y="Outlet",
+        x="Total After Tax",
+        orientation="h",  # Horizontal bar chart
         title="Outlet-wise Total Return Value (After Tax)",
         labels={"Total After Tax": "Return Value (After Tax)", "Outlet": "Outlet"},
         hover_data={"Outlet": True, "Total After Tax": ":,.2f"},
     )
 
     fig_outlets.update_traces(
-        hovertemplate="<b>%{x}</b><br>Return: %{y:,.2f}<extra></extra>",
+        hovertemplate="<b>%{y}</b><br>Return: %{x:,.2f}<extra></extra>",
         marker_line_width=0
     )
     fig_outlets.update_layout(
-        xaxis_tickangle=-45,
-        xaxis_tickfont=dict(size=10),
-        height=600,
-        margin=dict(l=40, r=20, t=60, b=120),
+        height=800,
+        margin=dict(l=200, r=50, t=60, b=40),
+        yaxis=dict(categoryorder="total ascending"),
     )
+
     st.plotly_chart(fig_outlets, use_container_width=True)
 
     st.dataframe(outlet_summary.style.format({"Total After Tax": "{:,.2f}", "Total Before Tax": "{:,.2f}"}))
 
-# ---- DETAILED VIEW ----
+# ---- DETAILS ----
 with st.expander("📋 View Detailed Return Data"):
     st.dataframe(df)
