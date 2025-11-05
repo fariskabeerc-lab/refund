@@ -64,38 +64,49 @@ col1, col2 = st.columns(2)
 col1.metric("📦 Total Return Value (After Tax)", f"{total_returns_after:,.2f}")
 col2.metric("🏷️ Total Return Value (Before Tax)", f"{total_returns_before:,.2f}")
 
-# ---- TOP 30 RETURNED ITEMS ----
+# ---- TOP 30 RETURNED ITEMS (with outlet info) ----
 st.subheader("🏆 Top 30 Returned Items by Value (After Tax)")
 
 top_n = 30
 top_items = (
-    df.groupby("Description", dropna=False)["Total After Tax"]
+    df.groupby(["Description", "Outlet"], dropna=False)["Total After Tax"]
     .sum()
-    .sort_values(ascending=False)
-    .head(top_n)
     .reset_index()
 )
 
+# Get overall top 30 items by total return value
+top_item_list = (
+    top_items.groupby("Description")["Total After Tax"]
+    .sum()
+    .sort_values(ascending=False)
+    .head(top_n)
+    .index
+)
+top_items = top_items[top_items["Description"].isin(top_item_list)]
+
 top_items["Description"] = top_items["Description"].astype(str)
+top_items["Outlet"] = top_items["Outlet"].astype(str)
 
 fig_items = px.bar(
     top_items,
     y="Description",
     x="Total After Tax",
-    orientation="h",  # Horizontal bar chart
-    title=f"Top {top_n} Returned Items (by Return Value)",
+    color="Outlet",  # color by outlet
+    orientation="h",
+    title=f"Top {top_n} Returned Items by Outlet",
     labels={"Total After Tax": "Return Value (After Tax)", "Description": "Item Description"},
-    hover_data={"Description": True, "Total After Tax": ":,.2f"},
+    hover_data={"Outlet": True, "Total After Tax": ":,.2f"},
 )
 
 fig_items.update_traces(
-    hovertemplate="<b>%{y}</b><br>Return: %{x:,.2f}<extra></extra>",
+    hovertemplate="<b>%{y}</b><br>Outlet: %{customdata[0]}<br>Return: %{x:,.2f}<extra></extra>",
     marker_line_width=0
 )
 fig_items.update_layout(
-    height=900,
+    height=1000,
     margin=dict(l=200, r=50, t=60, b=40),
     yaxis=dict(categoryorder="total ascending"),
+    legend_title_text="Outlet"
 )
 st.plotly_chart(fig_items, use_container_width=True)
 
@@ -114,10 +125,12 @@ if outlet_selected == "All":
         outlet_summary,
         y="Outlet",
         x="Total After Tax",
-        orientation="h",  # Horizontal bar chart
+        orientation="h",
         title="Outlet-wise Total Return Value (After Tax)",
         labels={"Total After Tax": "Return Value (After Tax)", "Outlet": "Outlet"},
         hover_data={"Outlet": True, "Total After Tax": ":,.2f"},
+        color="Outlet",
+        color_discrete_sequence=px.colors.qualitative.Set3
     )
 
     fig_outlets.update_traces(
@@ -127,9 +140,8 @@ if outlet_selected == "All":
     fig_outlets.update_layout(
         height=800,
         margin=dict(l=200, r=50, t=60, b=40),
-        yaxis=dict(categoryorder="total ascending"),
+        showlegend=False
     )
-
     st.plotly_chart(fig_outlets, use_container_width=True)
 
     st.dataframe(outlet_summary.style.format({"Total After Tax": "{:,.2f}", "Total Before Tax": "{:,.2f}"}))
