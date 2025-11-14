@@ -2,6 +2,30 @@ import streamlit as st
 import pandas as pd
 import os
 import plotly.express as px
+import streamlit.components.v1 as components
+
+components.html("""
+<script>
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log("Wake Lock active");
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (wakeLock !== null && document.visibilityState === "visible") {
+        requestWakeLock();
+    }
+});
+
+requestWakeLock();
+</script>
+""", height=0)
 
 # ---- FILES ----
 OUTLET_FILES = {
